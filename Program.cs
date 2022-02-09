@@ -6,8 +6,10 @@ namespace HomeTask_3
     {
         static void OutPut(Func<MyOwnList<string>> PrintFunc)
         {
-            foreach(string str in PrintFunc())
+            foreach (string str in PrintFunc())
+            {
                 Console.WriteLine(str);
+            }
         }
         static void Main(string[] args)
         {
