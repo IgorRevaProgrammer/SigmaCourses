@@ -14,6 +14,7 @@ namespace homework3
         public void Input()
         {
             Console.Write("Input string here: ");
+            if(Addition!=null)
             Addition(Console.ReadLine());
         }
     }
