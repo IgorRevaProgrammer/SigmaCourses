@@ -3,11 +3,11 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using ADO.NET;
 using Microsoft.OpenApi.Models;
 using Models;
 using Models.Models;
 using Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApi
 {
@@ -30,15 +30,19 @@ namespace WebApi
 
             services.AddControllers();
             var connectionString = Configuration.GetConnectionString("DefaultConnection");
-            
+
             services.AddScoped<CourseService>();
             services.AddScoped<HomeTaskService>();
             services.AddScoped<StudentService>();
 
-            services.AddScoped<IRepository<Student>>(p => new StudentRepository(connectionString));
-            services.AddScoped<IRepository<Course>>(p => new CourseRepository(connectionString));
-            services.AddScoped<IRepository<HomeTask>>(p => new HomeTaskRepository(connectionString));
-            services.AddScoped<IRepository<HomeTaskAssessment>>(p => new HomeTaskAssessmentRepository(connectionString));
+            services.AddDbContext<UniversityContext>(
+            options => options.UseSqlServer(connectionString));
+
+            services.AddScoped<IRepository<Student>, StudentRepository>();
+            services.AddScoped<IRepository<Course>, CourseRepository>();
+            services.AddScoped<IRepository<HomeTask>, HomeTaskRepository>();
+            services.AddScoped<IRepository<HomeTaskAssessment>, HomeTaskAssessmentRepository>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
