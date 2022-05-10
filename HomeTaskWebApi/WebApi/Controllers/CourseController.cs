@@ -1,84 +1,152 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using System.Linq;
 using Services;
-using WebApi.Dto;
 using Microsoft.Extensions.Logging;
+using WebApi.ViewModels;
+using WebApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using System.Threading.Tasks;
 
 namespace WebApi.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class CourseController : ControllerBase
+    public class CourseController : Controller
     {
         private readonly CourseService _courseService;
+        private readonly StudentService _studentService;
         ILogger<CourseController> _logger;
         public CourseController(CourseService courseService,
+            StudentService studentService,
              ILogger<CourseController> logger)
         {
             _courseService = courseService;
+            _studentService = studentService;
             _logger = logger;
         }
-        // GET: api/Course
+
         [HttpGet]
-        public ActionResult<IEnumerable<CourseDto>> Get()
+        public async Task<IActionResult> GetCourses()
         {
-            _logger.LogInformation("GetAllCourses method is processing");
-            return Ok(_courseService.GetAllCourses().Select(course => CourseDto.FromModel(course)));
+            _logger.LogInformation("GetCourses method is processing");
+            return View((await _courseService
+                .GetAllCourses())
+                .Select(c => ConvertVM.ToCourseVM(c))
+                .ToList());
         }
-        // Post api/Course
+
+        [Authorize(Roles = "Admin")]
+        public IActionResult Create()
+        {
+            ViewData["Action"] = "Create";
+            return View("Course",new CourseVM());
+        }
+
         [HttpPost]
-        public ActionResult Create([FromBody] CourseDto value)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(CourseVM courseVM)
         {
             _logger.LogInformation("CreateCourse method is processing");
-            var result = _courseService.CreateCourse(value.ToModel());
+            if (!ModelState.IsValid)
+            {
+                ViewData["Action"] = "Create";
+                return View("Course", courseVM);
+            }
+
+            var result = await _courseService.CreateCourse(Convert.ToCourse(courseVM));
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(error.Key, error.Value);
                     _logger.LogError(error.ToString(), " happened in CreateCourse method");
-                return BadRequest(result.Errors);
+                }
+                ViewData["Action"] = "Create";
+                return View("Course", courseVM);
             }
-            return Accepted();
+            return RedirectToAction("GetCourses");
         }
 
-        // GET api/Course/5
-        [HttpGet("{id}")]
-        public ActionResult<CourseDto> Get(int id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Edit(int id)
         {
-            _logger.LogInformation("GetCourseById method is processing");
-            var course = _courseService.GetCourseById(id);
-
-            if (course == null)
-            {
-                _logger.LogWarning("course ", course.Id, " not found in GetCourseById method");
-                return NotFound();
-            }
-
-            return Ok(CourseDto.FromModel(course));
+            var course = await _courseService.GetCourseById(id);
+            if (course == null) return NotFound();
+            ViewData["Action"] = "Edit";
+            return View("Course",ConvertVM.ToCourseVM(course));
         }
-        
-        // PUT api/Course/5
-        [HttpPut("{id}")]
-        public ActionResult Put(int id, [FromBody] CourseDto value)
+
+        [HttpPost]
+        [Authorize(Roles ="Admin")]
+        public IActionResult Edit(CourseVM courseVM)
         {
-            _logger.LogInformation("UpdateCourse method is processing");
-            var updateResult = _courseService.UpdateCourse(value.ToModel());
-            if (updateResult.HasErrors)
+            _logger.LogInformation("Edit course method is processing");
+            if (!ModelState.IsValid)
             {
-                foreach (var error in updateResult.Errors)
-                    _logger.LogError(error.ToString(), " happened in UpdateCourse method");
-                return BadRequest(updateResult.Errors);
+                ViewData["Action"] = "Edit";
+                return View("Course", courseVM);
             }
-            return Accepted();
+
+            var result = _courseService.UpdateCourse(Convert.ToCourse(courseVM));
+            if (result.HasErrors)
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(error.Key, error.Value);
+                    _logger.LogError(error.ToString(), " happened in edit course method");
+                }
+                ViewData["Action"] = "Edit";
+                return View("Course", courseVM);
+            }
+            return RedirectToAction("GetCourses");
         }
 
-        // DELETE api/Course/5
-        [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddStudentsToCourse(int id)
+        {
+            var students = await _studentService.GetAllStudents();
+            if (students == null) return StatusCode(500);
+
+            var course = await _courseService.GetCourseById(id);
+            if (course == null) return BadRequest();
+
+            AddStudentsToCourseVM addStudentsToCourseVM = new AddStudentsToCourseVM()
+            {
+                Id=course.Id,
+                Name=course.Name,
+            };
+
+            foreach (var student in students)
+            {
+                bool isAssigned = course.Students.Any(c => c.Id == student.Id);
+                addStudentsToCourseVM.students.Add(
+                    new AssignmentStudentVM() 
+                    { 
+                        Id = student.Id, 
+                        Name = student.Name, 
+                        IsAssigned = isAssigned 
+                    });
+            }
+
+            return View(addStudentsToCourseVM);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AddStudentsToCourse(AddStudentsToCourseVM addStudentsToCourseVM)
+        {
+            _logger.LogInformation("AddStudentsToCourse method is processing");
+            await _courseService.SetStudentsToCourse(addStudentsToCourseVM.Id, 
+                addStudentsToCourseVM.students
+                .Where(p => p.IsAssigned).Select(student => student.Id));
+
+            return RedirectToAction("GetCourses");
+        }
+
+        [Authorize(Roles="Admin")]
+        public async Task<IActionResult> Delete(int id)
         {
             _logger.LogInformation("DeleteCourse method is processing");
-            _courseService.DeleteCourse(id);
-            return Accepted();
+            await  _courseService.DeleteCourse(id);
+            return RedirectToAction("GetCourses");
         }
     }
 }

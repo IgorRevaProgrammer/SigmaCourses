@@ -1,0 +1,77 @@
+﻿@model CourseVM
+@{
+    ViewData["Title"] = ViewData["Action"];
+}
+<h3 class="text-center">@ViewData["Action"] course</h3>
+<form asp-action="@ViewData["Action"]" asp-controller="Course">
+     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+     <input type="hidden" asp-for="Id" />
+     <div class="form-group">
+        <label asp-for="Name" class="form-label"></label>
+        <input type="text" asp-for="Name" class="form-control" required/>
+        <span asp-validation-for="Name" class="text-danger"></span>
+     </div>
+     <div class="form-group">
+        <label asp-for="StartDate" class="form-label"></label>
+        <input type="date" asp-for="StartDate" class="form-control" required/>
+        <span asp-validation-for="StartDate" class="text-danger"></span>
+     </div>
+     <div class="form-group">
+        <label asp-for="EndDate" class="form-label"></label>
+        <input type="date" asp-for="EndDate" class="form-control" required/>
+        <span asp-validation-for="EndDate" class="text-danger"></span>
+     </div>
+     <div class="form-group">
+        <label asp-for="PassCredits" class="form-label"></label>
+        <input type="number" asp-for="PassCredits" class="form-control" required/>
+        <span asp-validation-for="PassCredits" class="text-danger"></span>
+     </div>
+     <input type="submit" value="Save" class="btn navColor"/>
+</form>
+
+@if (ViewData["Action"] == "Edit")
+{
+    <p>
+        <a class="btn navColor" asp-action="Create" asp-controller="HomeTask" asp-route-courseId=@Model.Id>Add New Home Task</a>
+    </p>
+}
+ @if (Model.HomeTasks.Any())
+{
+    <table class="table">
+         <thead class="thead-dark">
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Title</th>
+                <th scope="col">Date</th>
+                <th scope="col">Description</th>
+                @if (User.IsInRole("Admin"))
+                {
+                   <th>Admin panel</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i=0;i<Model.HomeTasks.Count;i++)
+            {
+                <tr>
+                    <th>@(i+1)</th>
+                    <td>@Model.HomeTasks[i].Title</td>
+                    <td>@Model.HomeTasks[i].Date</td>
+                    <td>@Model.HomeTasks[i].Description</td>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <td>
+                            @Html.ActionLink("Assessment", "Assessment", "HomeTask", new { id = @Model.HomeTasks[i].Id }) |
+                            @Html.ActionLink("Edit", "Edit", "HomeTask", new { id = @Model.HomeTasks[i].Id }) |
+                            @Html.ActionLink("Delete", "Delete", "HomeTask", new { id = @Model.HomeTasks[i].Id, courseId = @Model.Id })
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Course doesn't have any home tasks</p>
+}

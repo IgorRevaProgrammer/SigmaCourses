@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -21,36 +18,32 @@ namespace WebApi
             context = _context;
             _logger = logger;
         }
-        public List<Student> GetAll()
+        public async Task<List<Student>> GetAll()
         {
-            return (context.Students
+            return await context.Students
                 .Include(s => s.HomeTaskAssessments)
                 .Include(s => s.Courses)
-                .ToList());
+                .ToListAsync();
         }
-        public Student GetById(int id)
+        public async Task<Student> GetById(int id)
         {
-            return context.Students.FirstOrDefault(s => s.Id == id);
+            return await context.Students
+                .FirstOrDefaultAsync(s => s.Id == id);
         }
         public Student Create(Student student)
         {
             context.Students.Add(student);
             context.SaveChanges();
+            _logger.LogInformation("Student with email " + student.Email + " created successfully");
             return student;
         }
         public void Update(Student entity)
-        {
-            var studentForUpdate = context.Students.FirstOrDefault(s => s.Id == entity.Id);
-            if (studentForUpdate != null)
+        { 
+            if (entity != null) 
             {
-                studentForUpdate.Courses = studentForUpdate.Courses;
-                studentForUpdate.Email = studentForUpdate.Email;
-                studentForUpdate.GitHubLink = studentForUpdate.GitHubLink;
-                studentForUpdate.Name = studentForUpdate.Name;
-                studentForUpdate.BirthDate = studentForUpdate.BirthDate;
-                studentForUpdate.PhoneNumber = studentForUpdate.PhoneNumber;
-                studentForUpdate.Notes = studentForUpdate.Notes;
+                context.Update(entity);
                 context.SaveChanges();
+                _logger.LogInformation("Student with id " + entity.Id.ToString() + " updated successfully");
             }
             else
             {
@@ -61,6 +54,7 @@ namespace WebApi
         {
             context.Remove(context.Students.FirstOrDefault(s => s.Id == id));
             context.SaveChanges();
+            _logger.LogInformation("Student with id " + id.ToString() + " deleted successfully");
         }
     }
 }

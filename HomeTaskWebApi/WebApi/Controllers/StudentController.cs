@@ -1,85 +1,116 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 using System.Linq;
 using Services;
-using WebApi.Dto;
 using Microsoft.Extensions.Logging;
+using WebApi.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using System.Threading.Tasks;
+using WebApi.Models;
 
 namespace WebApi.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class StudentController : ControllerBase
+    public class StudentController : Controller
     {
         private readonly StudentService _studentService;
         private static ILogger<StudentController> _logger;
-        public StudentController(StudentService studentService, 
+        IAuthorizationService _authorizationService;
+        public StudentController(StudentService studentService,
+            IAuthorizationService authorizationService,
             ILogger<StudentController> logger)
         {
             _studentService = studentService;
+            _authorizationService = authorizationService;
             _logger = logger;
         }
 
-        // GET: api/Student
         [HttpGet]
-        public ActionResult<IEnumerable<StudentDto>> Get()
+        public async Task<IActionResult> GetStudents()
         {
             _logger.LogInformation("GetAllStudents method is processing");
-            return Ok(_studentService.GetAllStudents().Select(student => StudentDto.FromModel(student)));
+            return View((await _studentService.GetAllStudents())
+                .Select(s => ConvertVM.ToStudentVM(s))
+                .ToList());
         }
-        // Post api/Student
+
+        [Authorize]
+        public async Task<IActionResult> Edit(int id)
+        {
+            var student = await _studentService.GetStudentById(id);
+            var result = await _authorizationService.AuthorizeAsync(User, student, "UserAccessPolicy");
+            if (result.Succeeded)
+            {
+                ViewData["Action"] = "Edit";
+                return View("Student",ConvertVM.ToStudentVM(student));
+            }
+            return Forbid();
+        }
+
         [HttpPost]
-        public ActionResult Create([FromBody] StudentDto value)
+        [Authorize]
+        public async Task<IActionResult> Edit(StudentVM studentVM)
+        {
+            _logger.LogInformation("Edit student method is processing");
+            if (!ModelState.IsValid)
+            {
+                ViewData["Action"] = "Edit";
+                return View("Student", studentVM);
+            }
+            var result = await _authorizationService.AuthorizeAsync(User, Convert.ToStudent(studentVM), "UserAccessPolicy");
+            if (result.Succeeded)
+            {
+                var validationResult = _studentService.UpdateStudent(Convert.ToStudent(studentVM));
+                if (validationResult.HasErrors)
+                {
+                    foreach (var error in validationResult.Errors)
+                    {
+                        ModelState.AddModelError(error.Key, error.Value);
+                        _logger.LogError(error.Value, " happened in edit student method");
+                    }
+                    ViewData["Action"] = "Edit";
+                    return View("Student", studentVM);
+                }
+                return RedirectToAction("GetStudents");
+            }
+            return Forbid();
+        }
+
+        [Authorize(Roles = "Admin")]
+        public IActionResult Create()
+        {
+            ViewData["Action"] = "Create";
+            return View("Student",new StudentVM());
+        }
+
+        [HttpPost]
+        [Authorize(Roles="Admin")]
+        public async Task<IActionResult> Create(StudentVM studentVM)
         {
             _logger.LogInformation("CreateStudent method is processing");
-            var result = _studentService.CreateStudent(value.ToModel());
+            if(!ModelState.IsValid)
+            {
+                ViewData["Action"] = "Create";
+                return View("Student",studentVM);
+            }
+            var result = await _studentService.CreateStudent(Convert.ToStudent(studentVM));
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
+                {
                     _logger.LogError(error.ToString(), " happened in CreateStudent method");
-                return BadRequest(result.Errors);
+                    ModelState.AddModelError(error.Key,error.Value);
+                }
+                ViewData["Action"] = "Create";
+                return View("Student", studentVM);
             }
-            return Accepted();
+            return RedirectToAction("GetStudents");
         }
 
-        // GET api/Student/5
-        [HttpGet("{id}")]
-        public ActionResult<StudentDto> Get(int id)
-        {
-            _logger.LogInformation("GetStudentById method is processing");
-            var student = _studentService.GetStudentById(id);
-
-            if (student == null)
-            {
-                _logger.LogWarning("Student ", student.Id, " not found in GetStudentById method");
-                return NotFound();
-            }
-
-            return Ok(StudentDto.FromModel(student));
-        }
-        
-        // PUT api/Student/5
-        [HttpPut("{id}")]
-        public ActionResult Put(int id, [FromBody] StudentDto value)
-        {
-            _logger.LogInformation("UpdateStudent method is processing");
-            var result = _studentService.UpdateStudent(value.ToModel());
-            if (result.HasErrors)
-            {
-                foreach (var error in result.Errors)
-                    _logger.LogError(error.ToString(), " happened in UpdateStudent method");
-                return BadRequest(result.Errors);
-            }
-            return Accepted();
-        }
-
-        // DELETE api/Student/5
-        [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
         {
             _logger.LogInformation("DeleteStudent method is processing");
-            _studentService.DeleteStudent(id);
-            return Accepted();
+            await _studentService.DeleteStudent(id);
+            return RedirectToAction("GetStudents");
         }
     }
 }

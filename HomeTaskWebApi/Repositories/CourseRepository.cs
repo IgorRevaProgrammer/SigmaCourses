@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -20,40 +18,38 @@ namespace WebApi
             context = _context;
             _logger = logger;
         }
-        public List<Course> GetAll()
+        public async Task<List<Course>> GetAll()
         {
-            return (context.Courses
+            return await context.Courses
                 .Include(c => c.HomeTasks)
                 .Include(c => c.Students)
-                .ToList());
+                .ToListAsync();
         }
-        public Course GetById(int id)
+        public async Task<Course> GetById(int id)
         {
-            return context.Courses.FirstOrDefault(c => c.Id == id);
+            return await context.Courses
+                .Include(c=>c.Students)
+                .Include(c=>c.HomeTasks)
+                .FirstOrDefaultAsync(c => c.Id == id);
         }
         public Course Create(Course course)
         {
             context.Courses.Add(course);
             context.SaveChanges();
+            _logger.LogInformation("Course with name " + course.Name + " created successfully");
             return course;
         }
         public void Update(Course course)
         {
-            var courseForUpdate = context.Courses.FirstOrDefault(c => c.Id == course.Id);
-            if (courseForUpdate != null)
+            if(course != null)
             {
-                courseForUpdate.Name = course.Name;
-                courseForUpdate.StartDate = course.StartDate;
-                courseForUpdate.EndDate = course.EndDate;
-                courseForUpdate.PassCredits = course.PassCredits;
-                if(course.Students != null)
-                {
-                    courseForUpdate.Students.Clear();
-                    courseForUpdate.Students.AddRange(course.Students);
-                }
-                context.SaveChanges();
+                 context.Update(course);
+                 context.SaveChanges();
+                _logger.LogInformation("Course with id " + course.Id.ToString() + " updated successfully");
+
             }
-            else{
+            else
+            {
                 _logger.LogWarning("Course for update came empty to course repository");
             }
         }
@@ -61,6 +57,7 @@ namespace WebApi
         {
             context.Remove(context.Courses.FirstOrDefault(s => s.Id == id));
             context.SaveChanges();
+            _logger.LogInformation("Course with id " + id.ToString() + " deleted successfully");
         }
     }
 }

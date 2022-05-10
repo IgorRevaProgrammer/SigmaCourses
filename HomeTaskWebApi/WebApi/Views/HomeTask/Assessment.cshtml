@@ -1,0 +1,35 @@
+﻿@model HomeTaskAssessmentVM
+@{
+    ViewData["Title"] = "Home task assessment";
+}
+<h3 class="text-center">@ViewData["Title"]</h3>
+<form asp-action="Assessment" asp-controller="HomeTask" method="post">
+    <input type="hidden" asp-for="HomeTaskId"/>
+    <p>Home task: @Model.HomeTaskTitle @Model.Date</p>
+    <p>Student assessments</p>
+    @if (Model.homeTaskAssessmentStudents.Any())
+    {
+        <table class="table">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Student name</th>
+                    <th scope="col">Is complete</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (var i = 0; i < Model.homeTaskAssessmentStudents.Count; i++)
+                {
+                    <tr>
+                        <th>@(i+1)</th>
+                        <td>@Model.homeTaskAssessmentStudents[i].StudentName</td>
+                        <td><input class="form-check-input" type="checkbox" asp-for="homeTaskAssessmentStudents[i].IsComplete"></td>
+                        @Html.HiddenFor(m => Model.homeTaskAssessmentStudents[i].StudentId)
+                        @Html.HiddenFor(m => Model.homeTaskAssessmentStudents[i].HomeTaskAssessmentId)
+                   </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <input type="submit" value="Save" class="btn navColor"/>
+</form>
