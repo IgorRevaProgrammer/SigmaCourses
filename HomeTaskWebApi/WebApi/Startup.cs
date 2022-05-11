@@ -7,6 +7,9 @@ using Models;
 using Models.Models;
 using Services;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
+using WebApi.Areas.Identity.Data;
 
 namespace WebApi
 {
@@ -36,7 +39,7 @@ namespace WebApi
             services.AddScoped<IRepository<HomeTaskAssessment>, HomeTaskAssessmentRepository>();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, UserManager<User> userManager, RoleManager<IdentityRole> roleManager)
         {
             if (env.IsDevelopment())
             {
@@ -63,6 +66,28 @@ namespace WebApi
                     pattern: "{controller=Home}/{action=Home}/{id?}");
                 endpoints.MapRazorPages();
             });
+
+            CreateAdminUser(userManager, roleManager).Wait();
+        }
+
+        private async Task CreateAdminUser(
+            UserManager<User> userManager,
+            RoleManager<IdentityRole> roleManager)
+        {
+            User identityUser = new User
+            {
+                Email = "Admin@test.com",
+                UserName = "Admin@test.com",
+                Name = "Admin",
+                DateOfBirth = System.DateTime.Now
+            };
+            var userRes = await userManager.CreateAsync(identityUser, "admin1234#Q");
+            var rol = await roleManager.CreateAsync(new IdentityRole("Admin"));
+            var res = await userManager.AddToRoleAsync(identityUser, "Admin");
+            var isInRole = await userManager.IsInRoleAsync(identityUser, "Admin");
+            var roles = await userManager.GetRolesAsync(identityUser);
+            var allRoles = await roleManager.Roles.ToListAsync();
+            var x = userManager.Options.SignIn.RequireConfirmedAccount;
         }
     }
 }

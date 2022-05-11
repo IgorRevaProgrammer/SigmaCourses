@@ -107,6 +107,7 @@ namespace WebApi.Areas.Identity.Pages.Account
                         Name=Input.Name,
                         BirthDate = Input.DateOfBirth,
                         Email = Input.Email,
+                        PhoneNumber = "+12345"
                     });
 
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);

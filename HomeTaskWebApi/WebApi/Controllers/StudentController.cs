@@ -55,6 +55,7 @@ namespace WebApi.Controllers
                 ViewData["Action"] = "Edit";
                 return View("Student", studentVM);
             }
+
             var result = await _authorizationService.AuthorizeAsync(User, Convert.ToStudent(studentVM), "UserAccessPolicy");
             if (result.Succeeded)
             {
