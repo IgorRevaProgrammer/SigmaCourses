@@ -29,7 +29,7 @@ namespace WebApi.Controllers
             _logger.LogInformation("GetCourses method is processing");
             return View((await _courseService
                 .GetAllCourses())
-                .Select(c => ConvertVM.ToCourseVM(c))
+                .Select(c => c.ToCourseVM())
                 .ToList());
         }
 
@@ -45,13 +45,14 @@ namespace WebApi.Controllers
         public async Task<IActionResult> Create(CourseVM courseVM)
         {
             _logger.LogInformation("CreateCourse method is processing");
+            if (courseVM == null) return BadRequest();
             if (!ModelState.IsValid)
             {
                 ViewData["Action"] = "Create";
                 return View("Course", courseVM);
             }
 
-            var result = await _courseService.CreateCourse(Convert.ToCourse(courseVM));
+            var result = await _courseService.CreateCourse(courseVM.ToCourse());
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
@@ -71,7 +72,7 @@ namespace WebApi.Controllers
             var course = await _courseService.GetCourseById(id);
             if (course == null) return NotFound();
             ViewData["Action"] = "Edit";
-            return View("Course",ConvertVM.ToCourseVM(course));
+            return base.View("Course", course.ToCourseVM());
         }
 
         [HttpPost]
@@ -79,13 +80,14 @@ namespace WebApi.Controllers
         public IActionResult Edit(CourseVM courseVM)
         {
             _logger.LogInformation("Edit course method is processing");
+            if (courseVM == null) return BadRequest();
             if (!ModelState.IsValid)
             {
                 ViewData["Action"] = "Edit";
                 return View("Course", courseVM);
             }
 
-            var result = _courseService.UpdateCourse(Convert.ToCourse(courseVM));
+            var result = _courseService.UpdateCourse(courseVM.ToCourse());
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
@@ -102,11 +104,10 @@ namespace WebApi.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> AddStudentsToCourse(int id)
         {
-            var students = await _studentService.GetAllStudents();
-            if (students == null) return StatusCode(500);
-
             var course = await _courseService.GetCourseById(id);
             if (course == null) return BadRequest();
+
+            var students = await _studentService.GetAllStudents();
 
             AddStudentsToCourseVM addStudentsToCourseVM = new AddStudentsToCourseVM()
             {
@@ -134,6 +135,7 @@ namespace WebApi.Controllers
         public async Task<IActionResult> AddStudentsToCourse(AddStudentsToCourseVM addStudentsToCourseVM)
         {
             _logger.LogInformation("AddStudentsToCourse method is processing");
+            if (addStudentsToCourseVM == null) return BadRequest();
             await _courseService.SetStudentsToCourse(addStudentsToCourseVM.Id, 
                 addStudentsToCourseVM.students
                 .Where(p => p.IsAssigned).Select(student => student.Id));

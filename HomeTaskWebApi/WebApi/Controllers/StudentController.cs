@@ -28,7 +28,7 @@ namespace WebApi.Controllers
         {
             _logger.LogInformation("GetAllStudents method is processing");
             return View((await _studentService.GetAllStudents())
-                .Select(s => ConvertVM.ToStudentVM(s))
+                .Select(s => s.ToStudentVM())
                 .ToList());
         }
 
@@ -36,11 +36,12 @@ namespace WebApi.Controllers
         public async Task<IActionResult> Edit(int id)
         {
             var student = await _studentService.GetStudentById(id);
+            if (student == null) return NotFound();
             var result = await _authorizationService.AuthorizeAsync(User, student, "UserAccessPolicy");
             if (result.Succeeded)
             {
                 ViewData["Action"] = "Edit";
-                return View("Student",ConvertVM.ToStudentVM(student));
+                return View("Student", student.ToStudentVM());
             }
             return Forbid();
         }
@@ -50,15 +51,16 @@ namespace WebApi.Controllers
         public async Task<IActionResult> Edit(StudentVM studentVM)
         {
             _logger.LogInformation("Edit student method is processing");
+            if (studentVM == null) return BadRequest();
             if (!ModelState.IsValid)
             {
                 ViewData["Action"] = "Edit";
                 return View("Student", studentVM);
             }
-            var result = await _authorizationService.AuthorizeAsync(User, Convert.ToStudent(studentVM), "UserAccessPolicy");
+            var result = await _authorizationService.AuthorizeAsync(User, studentVM.ToStudent(), "UserAccessPolicy");
             if (result.Succeeded)
             {
-                var validationResult = _studentService.UpdateStudent(Convert.ToStudent(studentVM));
+                var validationResult = _studentService.UpdateStudent(studentVM.ToStudent());
                 if (validationResult.HasErrors)
                 {
                     foreach (var error in validationResult.Errors)
@@ -86,12 +88,13 @@ namespace WebApi.Controllers
         public async Task<IActionResult> Create(StudentVM studentVM)
         {
             _logger.LogInformation("CreateStudent method is processing");
+            if (studentVM == null) return BadRequest();
             if(!ModelState.IsValid)
             {
                 ViewData["Action"] = "Create";
                 return View("Student",studentVM);
             }
-            var result = await _studentService.CreateStudent(Convert.ToStudent(studentVM));
+            var result = await _studentService.CreateStudent(studentVM.ToStudent());
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)

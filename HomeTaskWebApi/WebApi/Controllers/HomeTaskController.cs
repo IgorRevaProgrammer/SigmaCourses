@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApi.ViewModels;
+using WebApi.Models;
 
 namespace WebApi.Controllers
 {
@@ -41,7 +42,7 @@ namespace WebApi.Controllers
                 ViewData["Action"] = "Create";
                 return View("HomeTask",homeTaskVM);
             }
-            var result = await _homeTaskService.CreateHomeTask(Models.Convert.ToHomeTask(homeTaskVM));
+            var result = await _homeTaskService.CreateHomeTask(homeTaskVM.ToHomeTask());
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
@@ -61,7 +62,7 @@ namespace WebApi.Controllers
             var homeTask= await _homeTaskService.GetHomeTaskById(id);
             if (homeTask == null) return BadRequest();  
             ViewData["Action"] = "Edit";
-            return View("HomeTask",ConvertVM.ToHomeTaskVM(homeTask));
+            return View("HomeTask",homeTask.ToHomeTaskVM());
         }
 
         [HttpPost]
@@ -75,7 +76,7 @@ namespace WebApi.Controllers
                 ViewData["Action"] = "Edit";
                 return View("HomeTask",homeTaskVM);
             }
-            var updateResult = _homeTaskService.UpdateHomeTask(Models.Convert.ToHomeTask(homeTaskVM));
+            var updateResult = _homeTaskService.UpdateHomeTask(homeTaskVM.ToHomeTask());
             if (updateResult.HasErrors)
             {
                 foreach (var error in updateResult.Errors)

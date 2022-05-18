@@ -1,12 +1,11 @@
 ﻿using Models.Models;
 using System.Linq;
-using WebApi.ViewModels;
 
-namespace WebApi.Models
+namespace WebApi.ViewModels
 {
-    public static class Convert
+    public static class ViewModelExtension
     {
-        public static Course ToCourse(CourseVM courseVM)
+        public static Course ToCourse(this CourseVM courseVM)
         {
             return new Course()
             {
@@ -18,7 +17,7 @@ namespace WebApi.Models
                 HomeTasks = courseVM.HomeTasks.Select(ht => ToHomeTask(ht)).ToList()
             };
         }
-        public static HomeTask ToHomeTask(HomeTaskVM homeTaskVM)
+        public static HomeTask ToHomeTask(this HomeTaskVM homeTaskVM)
         {
             return new HomeTask()
             {
@@ -30,7 +29,7 @@ namespace WebApi.Models
                 CourseId = homeTaskVM.CourseId
             };
         }
-        public static Student ToStudent(StudentVM studentVM)
+        public static Student ToStudent(this StudentVM studentVM)
         {
             return new Student()
             {

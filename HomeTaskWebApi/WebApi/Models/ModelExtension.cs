@@ -1,35 +1,36 @@
 ﻿using Models.Models;
 using System.Linq;
+using WebApi.ViewModels;
 
-namespace WebApi.ViewModels
+namespace WebApi.Models
 {
-    public static class ConvertVM
+    public static class ModelExtension
     {
-        public static CourseVM ToCourseVM(Course course)
+        public static CourseVM ToCourseVM(this Course course)
         {
             return new CourseVM()
             {
                 Id = course.Id,
                 Name = course.Name,
                 StartDate = course.StartDate,
-                EndDate= course.EndDate,
+                EndDate = course.EndDate,
                 PassCredits = course.PassCredits,
-                HomeTasks = course.HomeTasks.Select(ht=>ToHomeTaskVM(ht)).ToList()
+                HomeTasks = course.HomeTasks.Select(ht => ToHomeTaskVM(ht)).ToList()
             };
         }
-        public static HomeTaskVM ToHomeTaskVM(HomeTask homeTask)
+        public static HomeTaskVM ToHomeTaskVM(this HomeTask homeTask)
         {
             return new HomeTaskVM()
             {
                 Id = homeTask.Id,
-                Date=homeTask.Date,
+                Date = homeTask.Date,
                 Title = homeTask.Title,
-                Description=homeTask.Description,
-                Number=homeTask.Number,
-                CourseId=homeTask.CourseId
+                Description = homeTask.Description,
+                Number = homeTask.Number,
+                CourseId = homeTask.CourseId
             };
         }
-        public static StudentVM ToStudentVM(Student student)
+        public static StudentVM ToStudentVM(this Student student)
         {
             return new StudentVM()
             {

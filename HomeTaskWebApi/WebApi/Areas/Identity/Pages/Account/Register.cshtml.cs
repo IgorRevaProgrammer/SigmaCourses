@@ -102,12 +102,20 @@ namespace WebApi.Areas.Identity.Pages.Account
                 {
                     _logger.LogInformation("User created a new account with password.");
 
-                    await _studentService.CreateStudent(new Student()
+                    var res = await _studentService.CreateStudent(new Student()
                     {
-                        Name=Input.Name,
+                        Name = Input.Name,
                         BirthDate = Input.DateOfBirth,
                         Email = Input.Email,
                     });
+                    if (res.HasErrors)
+                    {
+                        var deleteRes = await _userManager.DeleteAsync(user);
+                        foreach (var error in res.Errors)
+                        {
+                            ModelState.AddModelError(string.Empty, error.Value);
+                        }
+                    }
 
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
