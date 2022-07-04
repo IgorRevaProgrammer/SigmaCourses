@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Models;
 using Services.Validators;
+using System.Threading.Tasks;
 
 namespace Services
 {
@@ -24,14 +25,14 @@ namespace Services
             _homeTaskAssessmentRepository = homeTaskAssessmentRepository;
         }
 
-        public virtual List<Student> GetAllStudents()
+        public virtual async Task<List<Student>> GetAllStudents()
         {
-            return _studentRepository.GetAll();
+            return await _studentRepository.GetAll();
         }
 
-        public virtual Student GetStudentById(int studentId)
+        public virtual async Task<Student> GetStudentById(int studentId)
         {
-            return _studentRepository.GetById(studentId);
+            return await _studentRepository.GetById(studentId);
         }
 
         public virtual ValidationResponse UpdateStudent(Student student)
@@ -41,7 +42,6 @@ namespace Services
             {
                 return response;
             }
-
             _studentRepository.Update(student);
             return new ValidationResponse();
         }
@@ -56,9 +56,9 @@ namespace Services
             return new ValidationResponse<Student>(student);
         }
 
-        public virtual void DeleteStudent(int id)
+        public virtual async Task DeleteStudent(int id)
         {
-            var student = _studentRepository.GetById(id);
+            var student = await _studentRepository.GetById(id);
             if (student == null)
             {
                 throw new ArgumentException($"Cannot find student with id '{id}'");
@@ -72,14 +72,14 @@ namespace Services
             _studentRepository.Remove(id);
         }
 
-        public virtual ValidationResponse<Student> CreateStudent(Student student)
+        public virtual async Task<ValidationResponse<Student>> CreateStudent(Student student)
         {
             ValidationResponse<Student> response = ValidateStudent(student);
             if (response.HasErrors)
             {
                 return response;
             }
-            var all = _studentRepository.GetAll();
+            var all = await _studentRepository.GetAll();
 
             if (all.Any(p => p.Email == student.Email))
             {

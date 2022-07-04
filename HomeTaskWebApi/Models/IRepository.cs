@@ -1,12 +1,13 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Models
 {
     public interface IRepository<TEntity> where TEntity : class
     {
-        List<TEntity> GetAll();
+        Task<List<TEntity>> GetAll();
 
-        TEntity GetById(int id);
+        Task<TEntity> GetById(int id);
 
         TEntity Create(TEntity entity);
 

@@ -1,84 +1,174 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Models.Models;
 using Services;
-using System.Collections.Generic;
+using System;
 using System.Linq;
-using WebApi.Dto;
+using System.Threading.Tasks;
+using WebApi.ViewModels;
+using WebApi.Models;
 
 namespace WebApi.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class HomeTaskController : ControllerBase
+    public class HomeTaskController : Controller
     {
         private readonly HomeTaskService _homeTaskService;
+        private readonly StudentService _studentService;
         private static ILogger<HomeTaskController> _logger;
         public HomeTaskController(HomeTaskService homeTaskService,
+            StudentService studentService,
             ILogger<HomeTaskController> logger)
         {
+            _studentService = studentService;
             _homeTaskService = homeTaskService;
             _logger = logger;
         }
-        // GET: api/HomeTask
-        [HttpGet]
-        public ActionResult<IEnumerable<HomeTaskDto>> Get()
+
+        [Authorize(Roles="Admin")]
+        public IActionResult Create(int courseId)
         {
-            _logger.LogInformation("GetAllHomeTasks method is processing");
-            return Ok(_homeTaskService.GetAllHomeTasks().Select(homeTask => HomeTaskDto.FromModel(homeTask)));
+            ViewData["Action"] = "Create";
+            return View("HomeTask", new HomeTaskVM() { CourseId = courseId });
         }
-        // Post api/HomeTask
+
         [HttpPost]
-        public ActionResult Create([FromBody] HomeTaskDto value)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Create(HomeTaskVM homeTaskVM)
         {
             _logger.LogInformation("CreateHomeTask method is processing");
-            var result = _homeTaskService.CreateHomeTask(value.ToModel());
+            if(!ModelState.IsValid)
+            {
+                ViewData["Action"] = "Create";
+                return View("HomeTask",homeTaskVM);
+            }
+            var result = await _homeTaskService.CreateHomeTask(homeTaskVM.ToHomeTask());
             if (result.HasErrors)
             {
                 foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(error.Key, error.Value);
                     _logger.LogError(error.ToString(), " happened in CreateHomeTask method");
-                return BadRequest(result.Errors);
+                }
+                ViewData["Action"] = "Create";
+                return View("HomeTask", homeTaskVM);
             }
-            return Accepted();
+            return RedirectToAction("Edit", "Course", new { id = homeTaskVM.CourseId });
         }
 
-        // GET api/HomeTask/5
-        [HttpGet("{id}")]
-        public ActionResult<HomeTaskDto> Get(int id)
+        [Authorize(Roles ="Admin")]
+        public async Task<IActionResult> Edit(int id)
         {
-            _logger.LogInformation("GetHomeTaskById method is processing");
-            var homeTask = _homeTaskService.GetHomeTaskById(id);
-
-            if (homeTask == null)
-            {
-                _logger.LogWarning("HomeTask ", homeTask.Id, " not found in GetHomeTaskById method");
-                return NotFound();
-            }
-
-            return Ok(HomeTaskDto.FromModel(homeTask));
+            var homeTask= await _homeTaskService.GetHomeTaskById(id);
+            if (homeTask == null) return BadRequest();  
+            ViewData["Action"] = "Edit";
+            return View("HomeTask",homeTask.ToHomeTaskVM());
         }
 
-        // PUT api/HomeTask/5
-        [HttpPut("{id}")]
-        public ActionResult Put(int id, [FromBody] HomeTaskDto value)
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public IActionResult Edit(HomeTaskVM homeTaskVM)
         {
+            if (homeTaskVM == null) return BadRequest();
             _logger.LogInformation("UpdateHomeTask method is processing");
-            var updateResult = _homeTaskService.UpdateHomeTask(value.ToModel());
+            if(!ModelState.IsValid)
+            {
+                ViewData["Action"] = "Edit";
+                return View("HomeTask",homeTaskVM);
+            }
+            var updateResult = _homeTaskService.UpdateHomeTask(homeTaskVM.ToHomeTask());
             if (updateResult.HasErrors)
             {
                 foreach (var error in updateResult.Errors)
+                {
                     _logger.LogError(error.ToString(), " happened in UpdateHomeTask method");
-                return BadRequest(updateResult.Errors);
+                    ModelState.AddModelError(error.Key, error.Value);
+                }
+                ViewData["Action"] = "Edit";
+                return View("HomeTask", homeTaskVM);
             }
-            return Accepted();
+            return RedirectToAction("Edit", "Course", new { id = homeTaskVM.CourseId });
         }
 
-        // DELETE api/HomeTask/5
-        [HttpDelete("{id}")]
-        public ActionResult Delete(int id)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id,int courseId)
         {
             _logger.LogInformation("DeleteHomeTask method is processing");
-            _homeTaskService.DeleteHomeTask(id);
-            return Accepted();
+            await _homeTaskService.DeleteHomeTask(id);
+            return RedirectToAction("Edit", "Course", new { id = courseId });
+        }
+
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Assessment(int id)
+        {
+            var homeTask = await _homeTaskService.GetHomeTaskById(id);
+            if (homeTask == null) return NotFound();
+
+            var students = (await _studentService.GetAllStudents())
+                .Where(students => students.Courses.
+                 Where(c => c.Id == homeTask.CourseId).Any()).ToList();
+
+            HomeTaskAssessmentVM homeTaskAssessmentVM =
+               new HomeTaskAssessmentVM
+               {
+                   HomeTaskTitle = homeTask.Title,
+                   Date = homeTask.Date,
+                   HomeTaskId = homeTask.Id
+               };
+
+            foreach(var student in students)
+            {
+                var homeTaskAssessmentStudentViewModel = new HomeTaskAssessmentStudentViewModel()
+                {
+                    StudentId = student.Id,
+                    StudentName = student.Name
+                };
+                var homeTaskAssessment = student.HomeTaskAssessments
+                    .FirstOrDefault(h => h.HomeTaskId == homeTask.Id);
+                if (homeTaskAssessment != null)
+                {
+                    homeTaskAssessmentStudentViewModel.HomeTaskAssessmentId = homeTaskAssessment.Id;
+                    homeTaskAssessmentStudentViewModel.IsComplete = homeTaskAssessment.IsComplete;
+                }
+                homeTaskAssessmentVM.homeTaskAssessmentStudents.Add(homeTaskAssessmentStudentViewModel);
+            }
+            return View(homeTaskAssessmentVM);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Assessment(HomeTaskAssessmentVM homeTaskAssessmentVM)
+        {
+            var homeTask = await _homeTaskService
+                .GetHomeTaskById(homeTaskAssessmentVM.HomeTaskId);
+
+            if (homeTask == null) return NotFound();
+
+            foreach (var homeTaskAssessmentStudent in homeTaskAssessmentVM.homeTaskAssessmentStudents)
+            {
+                var homeTaskAssessment = homeTask.HomeTaskAssessments
+                    .FirstOrDefault(p => p.Id == homeTaskAssessmentStudent.HomeTaskAssessmentId);
+                if (homeTaskAssessment != null)
+                {
+                    if (homeTaskAssessment.IsComplete != homeTaskAssessmentStudent.IsComplete)
+                    {
+                        homeTaskAssessment.Date = DateTime.Now;
+                        homeTaskAssessment.IsComplete = homeTaskAssessmentStudent.IsComplete;
+                    }
+                }
+                else
+                {
+                    homeTask.HomeTaskAssessments.Add(new HomeTaskAssessment
+                    {
+                        HomeTask = homeTask,
+                        IsComplete = homeTaskAssessmentStudent.IsComplete,
+                        StudentId = homeTaskAssessmentStudent.StudentId,
+                        Date = DateTime.Now
+                    });
+                }
+                _homeTaskService.UpdateHomeTask(homeTask);
+            }
+            return RedirectToAction("GetCourses", "Course");
         }
     }
 }

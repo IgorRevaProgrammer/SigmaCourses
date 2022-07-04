@@ -1,0 +1,33 @@
+﻿@model AddStudentsToCourseVM
+@{
+    ViewData["Title"] = "Assign students";
+}
+<h3 class="text-center"> Assign students to course</h3>
+<form asp-action="AddStudentsToCourse" asp-controller="Course" method="post">
+    <input type="hidden" asp-for="Id"/>
+    <p>Course: @Model.Name</p>
+    <p>Choose students you want to assign to this course: </p>
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th >#</th>
+                <th>Name</th>
+                <th>If assigned</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < Model.students.Count; i++)
+            {
+                <input type="hidden" asp-for="students[i].Id"/>
+                <tr>
+                    <th scope="row">@(i+1)</th>
+                    <td>@Model.students[i].Name</td>
+                    <td>
+                        <input class="form-check-input" type="checkbox" asp-for="students[i].IsAssigned">
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <input type="submit" value="Save" class="btn navColor"/>
+</form>

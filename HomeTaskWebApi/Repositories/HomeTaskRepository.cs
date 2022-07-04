@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data.SqlClient;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Models;
@@ -19,34 +18,33 @@ namespace WebApi
             context = _context;
             _logger = logger;
         }
-        public List<HomeTask> GetAll()
+        public async Task<List<HomeTask>> GetAll()
         {
-            return (context.HomeTasks
+            return await context.HomeTasks
                 .Include(h => h.HomeTaskAssessments)
-                .ToList());
+                .ThenInclude(h=>h.Student)
+                .ToListAsync();
         }
-        public HomeTask GetById(int id)
+        public async Task<HomeTask> GetById(int id)
         {
-            return context.HomeTasks.FirstOrDefault(h => h.Id == id);
+            return await context.HomeTasks
+                .Include(h=>h.HomeTaskAssessments)
+                .FirstOrDefaultAsync(h => h.Id == id);
         }
         public HomeTask Create(HomeTask homeTask)
         {
             context.HomeTasks.Add(homeTask);
             context.SaveChanges();
+            _logger.LogInformation("HomeTask with title " + homeTask.Title + " created successfully");
             return homeTask;
         }
         public void Update(HomeTask entity)
         {
-            var homeTaskForUpdate = context.HomeTasks.FirstOrDefault(h => h.Id == entity.Id);
-            if (homeTaskForUpdate != null)
+            if (entity != null)
             {
-                homeTaskForUpdate.HomeTaskAssessments.Clear();
-                homeTaskForUpdate.HomeTaskAssessments.AddRange(entity.HomeTaskAssessments);
-                homeTaskForUpdate.Title = entity.Title;
-                homeTaskForUpdate.Description = entity.Description;
-                homeTaskForUpdate.Date = entity.Date;
-                homeTaskForUpdate.Number = entity.Number;
+                context.HomeTasks.Update(entity);
                 context.SaveChanges();
+                _logger.LogInformation("HomeTask with id " + entity.Id.ToString() + " updated successfully");
             }
             else
             {
@@ -57,6 +55,7 @@ namespace WebApi
         {
             context.Remove(context.HomeTasks.FirstOrDefault(h => h.Id == id));
             context.SaveChanges();
+            _logger.LogInformation("HomeTask with id " + id.ToString() + " deleted successfully");
         }
     }
 }

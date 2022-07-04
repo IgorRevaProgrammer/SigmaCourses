@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Models;
 using Models.Models;
 using Services.Validators;
@@ -30,14 +31,14 @@ namespace Services
             _homeTaskAssessmentRepository = homeTaskAssessmentRepository;
         }
 
-        public virtual List<Course> GetAllCourses()
+        public virtual async Task<List<Course>> GetAllCourses()
         {
-            return _courseRepository.GetAll();
+            return await _courseRepository.GetAll();
         }
 
-        public virtual void DeleteCourse(int id)
+        public virtual async Task DeleteCourse(int id)
         {
-            var course = _courseRepository.GetById(id);
+            var course = await _courseRepository.GetById(id);
             if (course == null)
             {
                 throw new ArgumentException($"Cannot find course with id '{id}'");
@@ -55,9 +56,9 @@ namespace Services
             _courseRepository.Remove(id);
         }
 
-        public virtual Course GetCourseById(int id)
+        public virtual async Task<Course> GetCourseById(int id)
         {
-            return _courseRepository.GetById(id);
+            return await _courseRepository.GetById(id);
         }
 
         public virtual ValidationResponse UpdateCourse(Course course)
@@ -72,14 +73,14 @@ namespace Services
             return new ValidationResponse();
         }
 
-        public virtual ValidationResponse<Course> CreateCourse(Course course)
+        public virtual async Task<ValidationResponse<Course>> CreateCourse(Course course)
         {
             ValidationResponse<Course> response = ValidateCourse(course);
             if (response.HasErrors)
             {
                 return response;
             }
-            var all = _courseRepository.GetAll();
+            var all = await _courseRepository.GetAll();
 
             if (all.Any(p => p.Name == course.Name))
             {
@@ -89,9 +90,9 @@ namespace Services
             return new ValidationResponse<Course>(newCourse);
         }
 
-        public virtual void SetStudentsToCourse(int courseId, IEnumerable<int> studentIds)
+        public virtual async Task SetStudentsToCourse(int courseId, IEnumerable<int> studentIds)
         {
-            var course = _courseRepository.GetById(courseId);
+            var course = await _courseRepository.GetById(courseId);
             if (course == null)
             {
                 throw new ArgumentException($"There is no course with id '{courseId}'");
@@ -99,7 +100,7 @@ namespace Services
             course.Students.Clear();
             foreach (var studentId in studentIds)
             {
-                var student = _studentRepository.GetById(studentId);
+                var student = await _studentRepository.GetById(studentId);
                 if (student == null)
                 {
                     throw new ArgumentException($"Cannot find student with id '{studentId}'");

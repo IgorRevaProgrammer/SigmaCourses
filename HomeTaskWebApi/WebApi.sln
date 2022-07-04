@@ -9,7 +9,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Services", "UniversityServi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Models", "Models\Models.csproj", "{B5F7A237-EC36-4A7F-B6FF-DF04351AFDFE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Repositories", "Repositories\Repositories.csproj", "{FD674EC1-F7E4-4EEB-8625-B31CE4B09523}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Repositories", "Repositories\Repositories.csproj", "{FD674EC1-F7E4-4EEB-8625-B31CE4B09523}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{B0893245-10B7-4494-B6AD-DCD72057097F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApiTest", "CourseControllerTest\WebApiTest.csproj", "{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,9 +37,16 @@ Global
 		{FD674EC1-F7E4-4EEB-8625-B31CE4B09523}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD674EC1-F7E4-4EEB-8625-B31CE4B09523}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD674EC1-F7E4-4EEB-8625-B31CE4B09523}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E71BF7C1-55C0-4BC0-A00B-725BDBA3C66A} = {B0893245-10B7-4494-B6AD-DCD72057097F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C8B65ABC-3EFC-48FA-B370-2060D11D5D8C}
